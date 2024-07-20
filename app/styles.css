@@ -1,0 +1,131 @@
+.circle-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.agents-circle {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  width: 400px;
+  height: 400px;
+}
+
+.agent {
+  position: absolute;
+  transform-origin: 200px 200px;
+  text-align: center;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid #333;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+}
+
+.agent.sec {
+  background-color: #00f; /* SEC state background color */
+  color: #fff;
+}
+
+.agent.hack {
+  background-color: #f00; /* HACK state background color */
+  color: #fff;
+}
+
+.agent.365 {
+  background-color: #0f0; /* 365 state background color */
+  color: #fff;
+}
+
+.agent::after {
+  content: attr(data-state);
+  font-size: 14px;
+  color: white;
+  background-color: black;
+  padding: 5px;
+  border-radius: 5px;
+  position: absolute;
+  top: -30px;
+  white-space: nowrap;
+  display: none;
+}
+
+.agent[data-state="SEC"]::after,
+.agent[data-state="HACK"]::after,
+.agent[data-state="365"]::after {
+  display: block;
+}
+
+.agent:nth-child(n) {
+  --angle: calc(360deg / var(--num-agents) * var(--agent-index));
+  transform: rotate(var(--angle)) translate(200px)
+    rotate(calc(-1 * var(--angle)));
+}
+
+.agent.nominated {
+  border-color: red; /* Change the border color of the nominated agent */
+}
+
+.agent.nominated::before {
+  content: "→";
+  font-size: 24px;
+  color: red;
+  position: absolute;
+  top: 50%;
+  left: -20px;
+  transform: translate(-100%, -50%);
+}
+
+.user {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.user-buttons {
+  margin-top: 10px;
+}
+
+.user-nominate-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.user .agent {
+  border-color: blue;
+}
+
+.user.nominated {
+  border-color: red;
+  background-color: #ffe4e1;
+  color: red; /* Change the text color of the nominated user */
+}
+
+.popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px;
+  background-color: white;
+  border: 1px solid #333;
+  border-radius: 10px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.popup h2 {
+  margin-top: 0;
+}
+
+.popup button {
+  margin-top: 20px;
+}
