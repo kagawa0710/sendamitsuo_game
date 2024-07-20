@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import io from "socket.io-client";
 import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Box from "@mui/material/Box";
 import "./styles.css";
 
 let socket;
@@ -67,26 +69,31 @@ export default function Home() {
     <div>
       <h1>偉大なるせんだみつおゲーム</h1>
       {!isGameStarted ? (
-        <div>
-          <div>
-            <label>
-              Number of Participants:
-              <input
-                type="number"
-                min="4"
-                max="10"
-                value={numParticipants}
-                onChange={handleParticipantsChange}
-              />
-            </label>
-          </div>
-          <Button variant="contained" onClick={() => startGame(false)}>
-            Start Game (Normal)
-          </Button>
-          <Button variant="contained" onClick={() => startGame(true)}>
-            Start Game (Hard)
-          </Button>
-        </div>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
+          <TextField
+            label="参加人数"
+            type="number"
+            inputProps={{ min: 4, max: 10 }}
+            value={numParticipants}
+            onChange={handleParticipantsChange}
+            sx={{ width: 300 }}
+          />
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Button variant="contained" onClick={() => startGame(false)}>
+              Start Game (Normal)
+            </Button>
+            <Button variant="contained" onClick={() => startGame(true)}>
+              Start Game (Hard)
+            </Button>
+          </Box>
+        </Box>
       ) : (
         <div className="circle-container">
           <ul
@@ -108,16 +115,15 @@ export default function Home() {
             ))}
           </ul>
           <div>Round Count: {roundCount}</div>
-          <Button variant="contained" onClick={stopGame}>
+          <Button variant="contained" onClick={stopGame} sx={{ mt: 2 }}>
             Stop Game
           </Button>
         </div>
       )}
       {gameOverMessage && (
         <div className="popup">
-          <h2>Game Over</h2>
           <p>{gameOverMessage}</p>
-          <p>Duration: {duration} seconds</p>
+          <p>実行時間: {duration} seconds</p>
           <Button variant="contained" onClick={closePopup}>
             Close
           </Button>
