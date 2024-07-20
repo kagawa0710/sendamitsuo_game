@@ -90,6 +90,12 @@
 
 .user-buttons {
   margin-top: 10px;
+  left: 20px;
+}
+
+.user-buttons button {
+  margin-right: 10px; /* Add margin between buttons */
+  left: 80px;
 }
 
 .user-nominate-buttons {

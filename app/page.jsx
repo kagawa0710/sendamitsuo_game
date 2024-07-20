@@ -33,6 +33,7 @@ export default function Home() {
     });
 
     socket.on("user_turn", ({ agentIndex }) => {
+      setNominatedAgent(agentIndex);
       setUserTurn(true);
       setTimeLeft(5); // User has 5 seconds to choose
     });
@@ -50,6 +51,7 @@ export default function Home() {
       return () => clearInterval(timer);
     } else if (timeLeft === 0) {
       setUserTurn(false);
+      socket.emit("user_choice", { choice: "" }); // User did not respond in time
     }
   }, [userTurn, timeLeft]);
 
@@ -60,17 +62,21 @@ export default function Home() {
   };
 
   const handleUserInput = (choice) => {
-    setUserChoice(choice);
-  };
-
-  const handleUserNominate = (nominateIndex) => {
-    if (userTurn && userChoice) {
-      socket.emit("user_choice", { choice: userChoice, nominateIndex });
+    if (nominatedAgent !== null && agents[nominatedAgent].isUser) {
+      setUserChoice(choice);
+      socket.emit("user_choice", { choice });
       setUserTurn(false);
       setUserChoice("");
+      resetAgentStates();
     } else {
-      alert("It's not your turn or you haven't made a choice yet!");
+      socket.emit("user_choice", { choice: "invalid" }); // Invalid choice ends the game
     }
+  };
+
+  const resetAgentStates = () => {
+    setAgents((prevAgents) =>
+      prevAgents.map((agent) => ({ ...agent, state: "" }))
+    );
   };
 
   const handleParticipantsChange = (e) => {
@@ -139,23 +145,13 @@ export default function Home() {
                       >
                         HACK
                       </Button>
+                      <Button
+                        variant="contained"
+                        onClick={() => handleUserInput("365")}
+                      >
+                        365
+                      </Button>
                     </div>
-                    {userChoice && (
-                      <div className="user-nominate-buttons">
-                        {agents.map(
-                          (_, idx) =>
-                            !agents[idx].isUser && (
-                              <Button
-                                key={idx}
-                                variant="contained"
-                                onClick={() => handleUserNominate(idx)}
-                              >
-                                Nominate Agent {idx + 1}
-                              </Button>
-                            )
-                        )}
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <>Agent {index + 1}</>

@@ -17,10 +17,10 @@ app.prepare().then(() => {
 
   let agents = [];
   let currentAgentIndex = 0;
+  let previousAgentIndex = -1; // To track the previous agent
   let gameOver = false;
   let numAgents = 5; // Default number of agents
   let roundCount = 0;
-  let intervalId = null;
   let hardMode = false;
   let userIndex = 0; // User's index in agents array
 
@@ -44,51 +44,64 @@ app.prepare().then(() => {
   function handleAgentTurn(agentIndex) {
     if (gameOver) return;
 
-    // Reset all agents' states
-    agents.forEach((agent) => (agent.state = ""));
-
     const agent = agents[agentIndex];
     roundCount += 1;
 
     if (agentIndex === userIndex) {
-      // User's turn to choose "SEC" or "HACK"
+      // User's turn to choose "SEC", "HACK" or "365"
       io.emit("user_turn", { agentIndex });
     } else {
-      if (roundCount % 2 === 0) {
-        // Every even round, agent says "HACK"
-        agent.state = "HACK";
-        // Agents on both sides of the current agent say "365"
-        agents[(agentIndex - 1 + numAgents) % numAgents].state = "365";
-        agents[(agentIndex + 1) % numAgents].state = "365";
-      } else {
-        // Otherwise, agent says "SEC"
-        agent.state = "SEC";
-      }
+      // Reset all agents' states after a delay to simulate one tempo difference
+      setTimeout(() => {
+        agents.forEach((agent) => (agent.state = ""));
+        if (roundCount % 2 === 0) {
+          // Every even round, agent says "HACK"
+          if (agent.state !== "SEC") {
+            agent.state = "HACK";
+            // Agents on both sides of the current agent say "365"
+            agents[(agentIndex - 1 + numAgents) % numAgents].state = "365";
+            agents[(agentIndex + 1) % numAgents].state = "365";
+          } else {
+            gameOver = true;
+            io.emit("game_over", {
+              roundCount,
+              reason: "SEC and HACK can't be repeated consecutively",
+            });
+          }
+        } else {
+          // Otherwise, agent says "SEC"
+          if (agent.state !== "HACK") {
+            agent.state = "SEC";
+          } else {
+            gameOver = true;
+            io.emit("game_over", {
+              roundCount,
+              reason: "SEC and HACK can't be repeated consecutively",
+            });
+          }
+        }
 
-      io.emit("game_state", { agents, roundCount });
+        io.emit("game_state", { agents, roundCount });
+
+        // Nominate the next agent
+        setTimeout(nominateNextAgent, hardMode ? 1000 : 2000);
+      }, 500);
     }
   }
 
   // Nominate the next agent
   function nominateNextAgent() {
-    // Randomly select the next agent
     let nextAgentIndex;
     do {
       nextAgentIndex = Math.floor(Math.random() * numAgents);
-    } while (nextAgentIndex === currentAgentIndex);
-
-    currentAgentIndex = nextAgentIndex;
-
-    // Delay the next turn to the end of the time limit
-    setTimeout(
-      () => {
-        handleAgentTurn(currentAgentIndex);
-        if (!gameOver) {
-          nominateNextAgent();
-        }
-      },
-      hardMode ? 1000 : 2000
+    } while (
+      nextAgentIndex === currentAgentIndex ||
+      nextAgentIndex === previousAgentIndex
     );
+
+    previousAgentIndex = currentAgentIndex;
+    currentAgentIndex = nextAgentIndex;
+    handleAgentTurn(currentAgentIndex);
   }
 
   // Start the game
@@ -102,7 +115,6 @@ app.prepare().then(() => {
       () => {
         if (!gameOver) {
           handleAgentTurn(currentAgentIndex);
-          nominateNextAgent();
         }
       },
       hard ? 1000 : 2000
@@ -116,16 +128,28 @@ app.prepare().then(() => {
       startGame(hard, participants);
     });
 
-    socket.on("user_choice", ({ choice, nominateIndex }) => {
+    socket.on("user_choice", ({ choice }) => {
       if (gameOver) return;
 
       const agent = agents[currentAgentIndex];
       if (agent.id === userIndex) {
         // User's choice
         agent.state = choice;
-        currentAgentIndex = nominateIndex;
-        handleAgentTurn(nominateIndex);
-        nominateNextAgent();
+        if (choice === "HACK") {
+          // Agents on both sides of the user say "365"
+          agents[(userIndex - 1 + numAgents) % numAgents].state = "365";
+          agents[(userIndex + 1) % numAgents].state = "365";
+        } else if (choice === "365") {
+          // No additional actions for 365
+        }
+        io.emit("game_state", { agents, roundCount });
+        setTimeout(nominateNextAgent, 500); // Nominate the next agent after a short delay
+      } else {
+        gameOver = true;
+        io.emit("game_over", {
+          roundCount,
+          reason: "User made an invalid choice",
+        });
       }
     });
 
