@@ -10,14 +10,12 @@ let socket;
 export default function Home() {
   const [agents, setAgents] = useState([]);
   const [isGameStarted, setIsGameStarted] = useState(false);
-  const [userTurn, setUserTurn] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(0);
-  const [nominatedAgent, setNominatedAgent] = useState(null);
   const [roundCount, setRoundCount] = useState(0);
   const [hardMode, setHardMode] = useState(false);
   const [numParticipants, setNumParticipants] = useState(5);
   const [gameOverMessage, setGameOverMessage] = useState("");
-  const [userChoice, setUserChoice] = useState("");
+  const [duration, setDuration] = useState("");
+  const [nextAgentIndex, setNextAgentIndex] = useState(null);
 
   useEffect(() => {
     socket = io();
@@ -27,15 +25,14 @@ export default function Home() {
       setRoundCount(roundCount);
     });
 
-    socket.on("game_over", ({ roundCount, reason }) => {
+    socket.on("game_over", ({ roundCount, duration, reason }) => {
       setIsGameStarted(false);
-      setGameOverMessage(`Game over! Rounds: ${roundCount}. Reason: ${reason}`);
+      setDuration(duration);
+      setGameOverMessage(`Rounds: ${roundCount}. Reason: ${reason}`);
     });
 
-    socket.on("user_turn", ({ agentIndex }) => {
-      setNominatedAgent(agentIndex);
-      setUserTurn(true);
-      setTimeLeft(5); // User has 5 seconds to choose
+    socket.on("next_agent", ({ previousAgentIndex, nextAgentIndex }) => {
+      setNextAgentIndex(nextAgentIndex);
     });
 
     return () => {
@@ -43,40 +40,15 @@ export default function Home() {
     };
   }, []);
 
-  useEffect(() => {
-    if (userTurn && timeLeft > 0) {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-      return () => clearInterval(timer);
-    } else if (timeLeft === 0) {
-      setUserTurn(false);
-      socket.emit("user_choice", { choice: "" }); // User did not respond in time
-    }
-  }, [userTurn, timeLeft]);
-
   const startGame = (hard) => {
     socket.emit("start_game", { hard, participants: numParticipants });
     setIsGameStarted(true);
     setHardMode(hard);
   };
 
-  const handleUserInput = (choice) => {
-    if (nominatedAgent !== null && agents[nominatedAgent].isUser) {
-      setUserChoice(choice);
-      socket.emit("user_choice", { choice });
-      setUserTurn(false);
-      setUserChoice("");
-      resetAgentStates();
-    } else {
-      socket.emit("user_choice", { choice: "invalid" }); // Invalid choice ends the game
-    }
-  };
-
-  const resetAgentStates = () => {
-    setAgents((prevAgents) =>
-      prevAgents.map((agent) => ({ ...agent, state: "" }))
-    );
+  const stopGame = () => {
+    socket.emit("stop_game");
+    setIsGameStarted(false);
   };
 
   const handleParticipantsChange = (e) => {
@@ -88,6 +60,7 @@ export default function Home() {
 
   const closePopup = () => {
     setGameOverMessage("");
+    setDuration("");
   };
 
   return (
@@ -123,49 +96,28 @@ export default function Home() {
             {agents.map((agent, index) => (
               <li
                 key={index}
-                className={`agent ${
-                  nominatedAgent === index ? "nominated" : ""
-                } ${agent.state.toLowerCase()}`}
+                className={`agent ${agent.state.toLowerCase()}`}
                 data-state={agent.state}
                 style={{ "--agent-index": index }}
               >
-                {agent.isUser ? (
-                  <div className="user">
-                    <span>User</span>
-                    <div className="user-buttons">
-                      <Button
-                        variant="contained"
-                        onClick={() => handleUserInput("SEC")}
-                      >
-                        SEC
-                      </Button>
-                      <Button
-                        variant="contained"
-                        onClick={() => handleUserInput("HACK")}
-                      >
-                        HACK
-                      </Button>
-                      <Button
-                        variant="contained"
-                        onClick={() => handleUserInput("365")}
-                      >
-                        365
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>Agent {index + 1}</>
+                Agent {index + 1}
+                {nextAgentIndex === index && (
+                  <div className="next-agent-bubble">Next</div>
                 )}
               </li>
             ))}
           </ul>
           <div>Round Count: {roundCount}</div>
+          <Button variant="contained" onClick={stopGame}>
+            Stop Game
+          </Button>
         </div>
       )}
       {gameOverMessage && (
         <div className="popup">
           <h2>Game Over</h2>
           <p>{gameOverMessage}</p>
+          <p>Duration: {duration} seconds</p>
           <Button variant="contained" onClick={closePopup}>
             Close
           </Button>

@@ -68,51 +68,16 @@
     rotate(calc(-1 * var(--angle)));
 }
 
-.agent.nominated {
-  border-color: red; /* Change the border color of the nominated agent */
-}
-
-.agent.nominated::before {
-  content: "→";
-  font-size: 24px;
-  color: red;
+.next-agent-bubble {
   position: absolute;
-  top: 50%;
-  left: -20px;
-  transform: translate(-100%, -50%);
-}
-
-.user {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.user-buttons {
-  margin-top: 10px;
-  left: 20px;
-}
-
-.user-buttons button {
-  margin-right: 10px; /* Add margin between buttons */
-  left: 80px;
-}
-
-.user-nominate-buttons {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 10px;
-}
-
-.user .agent {
-  border-color: blue;
-}
-
-.user.nominated {
-  border-color: red;
-  background-color: #ffe4e1;
-  color: red; /* Change the text color of the nominated user */
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  background-color: #333;
+  color: white;
+  border-radius: 5px;
+  white-space: nowrap;
 }
 
 .popup {
